@@ -4,11 +4,11 @@ import './config.js'
 const { Pool } = pkg;
 
 const pool = new Pool({
-  host: "db",
+  host: process.env.POSTGRES_HOST,
   port: 5432,
   user: process.env.POSTGRES_USER,
   password: process.env.POSTGRES_PASSWORD,
-  database: process.env.POSTGRES_DB
+  database: process.env.POSTGRES_DB // the database name
 });
 
 // Test the database connection at startup
