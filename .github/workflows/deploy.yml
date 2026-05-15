@@ -1,1 +1,77 @@
+name: Deploy to EC2 via ECR
 
+on:
+  push:
+    branches:
+      - main
+
+env:
+  AWS_REGION: eu-north-1
+  ECR_REGISTRY: 137345587313.dkr.ecr.eu-north-1.amazonaws.com
+  BACKEND_IMAGE_NAME: ai-driven-blog-system-backend
+  FRONTEND_IMAGE_NAME: ai-driven-blog-system-frontend
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Authenticate Docker with Amazon ECR (get temporary login token for image push)
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Backend Image
+        run: |
+          docker build -t $BACKEND_IMAGE_NAME:latest ./backend
+
+      - name: Build Frontend Image
+        run: |
+          docker build -t $FRONTEND_IMAGE_NAME:latest ./frontend
+
+      - name: Tag Backend Image for Amazon ECR (required format for pushing images)
+        run: |
+          docker tag $BACKEND_IMAGE_NAME:latest $ECR_REGISTRY/$BACKEND_IMAGE_NAME:latest
+
+      - name: Tag Frontend Image for Amazon ECR (required format for pushing images)
+        run: |
+          docker tag $FRONTEND_IMAGE_NAME:latest $ECR_REGISTRY/$FRONTEND_IMAGE_NAME:latest
+
+      - name: Push Backend Image to ECR
+        run: |
+          docker push $ECR_REGISTRY/$BACKEND_IMAGE_NAME:latest
+
+      - name: Push Frontend Image to ECR
+        run: |
+          docker push $ECR_REGISTRY/$FRONTEND_IMAGE_NAME:latest
+
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/ec2-user/deploy
+
+            aws ecr get-login-password --region eu-north-1 \
+            | docker login --username AWS --password-stdin $ECR_REGISTRY
+
+            docker compose \
+              -f infra/docker-compose-prod.yml \
+              --env-file .env \
+              pull
+
+            docker compose \
+              -f infra/docker-compose-prod.yml \
+              --env-file .env \
+              up -d
