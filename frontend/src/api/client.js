@@ -2,7 +2,7 @@
 const BASE_URL =
   import.meta.env.MODE === "development"
     ? "http://localhost:8080"       // local dev backend
-    : "http://16.16.67.98:3000";    // production backend 
+    : "http://16.16.67.98:8080";    // production backend 
 
 export async function fetchArticles() {
   try {
