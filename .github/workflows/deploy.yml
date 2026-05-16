@@ -64,7 +64,7 @@ jobs:
             cd /home/ec2-user/deploy
 
             aws ecr get-login-password --region eu-north-1 \
-            | docker login --username AWS --password-stdin $ECR_REGISTRY
+            | docker login --username AWS --password-stdin 137345587313.dkr.ecr.eu-north-1.amazonaws.com
 
             docker-compose \
               -f infra/docker-compose-prod.yml \
