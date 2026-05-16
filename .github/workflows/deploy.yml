@@ -66,12 +66,12 @@ jobs:
             aws ecr get-login-password --region eu-north-1 \
             | docker login --username AWS --password-stdin $ECR_REGISTRY
 
-            docker compose \
+            docker-compose \
               -f infra/docker-compose-prod.yml \
               --env-file .env \
               pull
 
-            docker compose \
+            docker-compose \
               -f infra/docker-compose-prod.yml \
               --env-file .env \
               up -d
